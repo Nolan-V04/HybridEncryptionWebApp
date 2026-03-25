@@ -137,3 +137,30 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Project-specific build outputs
+frontend/dist/
+frontend/node_modules/
+backend/node_modules/
+
+# Local test/temp files
+backend/tmp/
+tmp/
+
+# LaTeX build artifacts (docs)
+*.aux
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.synctex.gz
+*.toc
+*.xdv
+*.bbl
+*.blg
+
+# OS/editor clutter
+Thumbs.db
+Desktop.ini
