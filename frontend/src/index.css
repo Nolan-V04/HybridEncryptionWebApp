@@ -1,0 +1,29 @@
+:root {
+  font-family: "Space Grotesk", "IBM Plex Sans", "Aptos", sans-serif;
+  line-height: 1.45;
+  font-weight: 400;
+  color: #153440;
+  background: radial-gradient(circle at 15% 20%, #e3fff6, #f5fff0 38%, #fcf7ef 90%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2 {
+  font-family: "Space Grotesk", "Sora", "Aptos Display", sans-serif;
+  color: #11333e;
+}
+
+p {
+  margin: 0;
+}
