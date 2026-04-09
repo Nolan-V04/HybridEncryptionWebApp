@@ -146,6 +146,8 @@ backend/node_modules/
 # Local test/temp files
 backend/tmp/
 tmp/
+docs/
+*.tex
 
 # LaTeX build artifacts (docs)
 *.aux
@@ -166,4 +168,3 @@ Thumbs.db
 Desktop.ini
 
 
-docs/
