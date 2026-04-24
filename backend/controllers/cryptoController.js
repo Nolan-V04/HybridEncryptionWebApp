@@ -1,6 +1,8 @@
+const crypto = require("crypto");
 const { decryptFile, encryptFile, generateKeyPair } = require("../services/cryptoService");
 const { sanitizeFilename } = require("../utils/filename");
 const { saveFileMetadata, saveLog } = require("../services/metadataService");
+const { generateKeyFingerprint } = require("../services/keyManagementService");
 
 const MAX_KEY_LENGTH = 16000;
 const MAX_PAYLOAD_SIZE = 100 * 1024 * 1024;
@@ -37,6 +39,7 @@ async function generateKeysHandler(req, res) {
 
 async function encryptHandler(req, res) {
   const sourceName = sanitizeFilename(req.file?.originalname, "encrypted_file");
+  const startTime = Date.now();
 
   try {
     if (!req.file || !req.file.buffer) {
@@ -48,6 +51,8 @@ async function encryptHandler(req, res) {
       return res.status(400).json({ message: "Valid RSA public key is required" });
     }
 
+    const keyFingerprint = generateKeyFingerprint(publicKey);
+
     const payload = encryptFile(req.file.buffer, publicKey, {
       originalName: sourceName,
       mimeType: req.file.mimetype || "application/octet-stream",
@@ -55,20 +60,38 @@ async function encryptHandler(req, res) {
 
     const hybridFilename = `${sourceName}.hybrid`;
     const payloadBuffer = Buffer.from(JSON.stringify(payload), "utf8");
+    const duration = Date.now() - startTime;
 
     await saveFileMetadata({ filename: sourceName, size: req.file.size });
-    await saveLog({ action: "encrypt", status: "success", message: `Encrypted ${sourceName}` });
+    await saveLog({
+      action: "encrypt",
+      status: "success",
+      message: `Encrypted ${sourceName}`,
+      filename: sourceName,
+      fileSize: req.file.size,
+      keyFingerprint,
+      duration,
+    });
 
     setDownloadHeaders(res, hybridFilename, "application/octet-stream");
     return res.status(200).send(payloadBuffer);
   } catch (error) {
-    await saveLog({ action: "encrypt", status: "failure", message: `Encryption failed for ${sourceName}` });
+    const duration = Date.now() - startTime;
+    await saveLog({
+      action: "encrypt",
+      status: "failure",
+      message: `Encryption failed for ${sourceName}`,
+      filename: sourceName,
+      duration,
+      errorDetails: error.message,
+    });
     return res.status(400).json({ message: "Encryption failed. Check key and file data." });
   }
 }
 
 async function decryptHandler(req, res) {
   const hybridName = sanitizeFilename(req.file?.originalname, "encrypted_payload.hybrid");
+  const startTime = Date.now();
 
   try {
     if (!req.file || !req.file.buffer) {
@@ -93,14 +116,30 @@ async function decryptHandler(req, res) {
 
     const { fileBuffer, fileName, mimeType } = decryptFile(payload, privateKey);
     const outputName = sanitizeFilename(fileName, hybridName.replace(/\.hybrid$/i, "") || "decrypted_file");
+    const duration = Date.now() - startTime;
 
     await saveFileMetadata({ filename: outputName, size: fileBuffer.length });
-    await saveLog({ action: "decrypt", status: "success", message: `Decrypted ${outputName}` });
+    await saveLog({
+      action: "decrypt",
+      status: "success",
+      message: `Decrypted ${outputName}`,
+      filename: outputName,
+      fileSize: fileBuffer.length,
+      duration,
+    });
 
     setDownloadHeaders(res, outputName, mimeType || "application/octet-stream");
     return res.status(200).send(fileBuffer);
   } catch (error) {
-    await saveLog({ action: "decrypt", status: "failure", message: `Decryption failed for ${hybridName}` });
+    const duration = Date.now() - startTime;
+    await saveLog({
+      action: "decrypt",
+      status: "failure",
+      message: `Decryption failed for ${hybridName}`,
+      filename: hybridName,
+      duration,
+      errorDetails: error.message,
+    });
 
     const isAuthError = error instanceof Error && /auth|integrity|decrypt/i.test(error.message);
     const message = isAuthError
